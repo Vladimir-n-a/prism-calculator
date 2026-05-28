@@ -38,19 +38,22 @@ object PrismCalculator {
     private const val EPSILON = 0.01
 
     fun calculateEye(eye: EyeInput, isRightEye: Boolean): EyeResult {
-        val h = eye.outVal - eye.inVal
-        val v = eye.up - eye.down
+        val h = eye.outVal - eye.inVal   // + = Out (toward temple, BO)
+        val v = eye.up - eye.down        // + = Up (BU)
         val p = sqrt(h * h + v * v)
 
-        val angleRad = atan2(v, h)
+        // TABO frame (see protractor):
+        //   Right eye (OD): Out -> 180°, In -> 0°/360°
+        //   Left eye  (OS): Out -> 0°/360°, In -> 180°
+        //   Both eyes:      Up  -> 90°,   Down -> 270°
+        val x = if (isRightEye) -h else h
+        val angleRad = atan2(v, x)
         val angleTabo = ((angleRad * 180.0 / PI) + 360.0) % 360.0
-
-        val baseLabel = buildBaseLabel(h, v, p)
 
         return EyeResult(
             power = p,
             angleTabo = angleTabo,
-            baseLabel = baseLabel,
+            baseLabel = buildBaseLabel(h, v, p),
             h = h,
             v = v
         )
@@ -75,26 +78,27 @@ object PrismCalculator {
         val rightResult = calculateEye(right, isRightEye = true)
         val leftResult = calculateEye(left, isRightEye = false)
 
-        val rightX = rightResult.h
-        val rightY = rightResult.v
-        val leftX = -leftResult.h
-        val leftY = leftResult.v
+        // Per-eye vectors expressed in the common TABO frame.
+        val rx = -rightResult.h
+        val ry = rightResult.v
+        val lx = leftResult.h
+        val ly = leftResult.v
 
-        val totalX = rightX + leftX
-        val totalY = rightY + leftY
-        val totalP = sqrt(totalX * totalX + totalY * totalY)
+        // Relative prism between the eyes (R - L); each eye carries half of it,
+        // in opposite TABO directions. This matches the reference calculator.
+        val dx = rx - lx
+        val dy = ry - ly
+        val total = sqrt(dx * dx + dy * dy)
+        val half = total / 2.0
 
-        val halfP = totalP / 2.0
-        val halfAngleAbs = atan2(totalY, totalX) * 180.0 / PI
-
-        val rightHalfAngle = ((halfAngleAbs) + 360.0) % 360.0
-        val leftHalfAngle = ((180.0 - halfAngleAbs) + 360.0) % 360.0
+        val rightAngle = ((atan2(dy, dx) * 180.0 / PI) + 360.0) % 360.0
+        val leftAngle = (rightAngle + 180.0) % 360.0
 
         val distribution = EqualDistribution(
-            rightPower = halfP,
-            rightAngle = rightHalfAngle,
-            leftPower = halfP,
-            leftAngle = leftHalfAngle
+            rightPower = half,
+            rightAngle = rightAngle,
+            leftPower = half,
+            leftAngle = leftAngle
         )
 
         val anyInput = rightResult.power >= EPSILON || leftResult.power >= EPSILON
