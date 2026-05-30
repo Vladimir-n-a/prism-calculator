@@ -111,6 +111,7 @@ fun PrismScreen() {
             ) {
                 EyeColumn(
                     title = "Right (OD)",
+                    isRightEye = true,
                     up = rightUp, onUp = { rightUp = it },
                     down = rightDown, onDown = { rightDown = it },
                     outVal = rightOut, onOut = { rightOut = it },
@@ -119,6 +120,7 @@ fun PrismScreen() {
                 )
                 EyeColumn(
                     title = "Left (OS)",
+                    isRightEye = false,
                     up = leftUp, onUp = { leftUp = it },
                     down = leftDown, onDown = { leftDown = it },
                     outVal = leftOut, onOut = { leftOut = it },
@@ -192,6 +194,7 @@ fun PrismScreen() {
 @Composable
 private fun EyeColumn(
     title: String,
+    isRightEye: Boolean,
     up: String, onUp: (String) -> Unit,
     down: String, onDown: (String) -> Unit,
     outVal: String, onOut: (String) -> Unit,
@@ -226,24 +229,45 @@ private fun EyeColumn(
             )
             Spacer(Modifier.height(8.dp))
 
+            // Anatomical layout: "Out" sits on the temporal side of each eye,
+            // "In" on the nasal side. With OD on the left and OS on the right
+            // of the screen this means:
+            //   OD: [Out] 👁 [In]
+            //   OS: [In] 👁 [Out]
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(6.dp),
                 verticalAlignment = Alignment.Top
             ) {
-                PrismField(
-                    value = outVal,
-                    onValueChange = onOut,
-                    label = "Out",
-                    modifier = Modifier.weight(1f)
-                )
-                EyeIconCell()
-                PrismField(
-                    value = inVal,
-                    onValueChange = onIn,
-                    label = "In",
-                    modifier = Modifier.weight(1f)
-                )
+                if (isRightEye) {
+                    PrismField(
+                        value = outVal,
+                        onValueChange = onOut,
+                        label = "Out",
+                        modifier = Modifier.weight(1f)
+                    )
+                    EyeIconCell()
+                    PrismField(
+                        value = inVal,
+                        onValueChange = onIn,
+                        label = "In",
+                        modifier = Modifier.weight(1f)
+                    )
+                } else {
+                    PrismField(
+                        value = inVal,
+                        onValueChange = onIn,
+                        label = "In",
+                        modifier = Modifier.weight(1f)
+                    )
+                    EyeIconCell()
+                    PrismField(
+                        value = outVal,
+                        onValueChange = onOut,
+                        label = "Out",
+                        modifier = Modifier.weight(1f)
+                    )
+                }
             }
             Spacer(Modifier.height(8.dp))
 
